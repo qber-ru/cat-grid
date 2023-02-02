@@ -1,22 +1,27 @@
 let main = document.querySelector("main");
 const imgCat = 'imgs/cat.jpg'
 const updCards = function (data) {
+    let count = 0;
     main.innerHTML = "";
     data.forEach(function (cat) {
         if (cat.id) {
-            let card = `<div class="${cat.favourite ? "card like" : "card"}" style="background-image:
+            let card = `<div class="${cat.favourite ? "card like" : "card"}" data-catId="${count}" style="background-image:
     url(${cat.img_link || imgCat})">
     <span>${cat.name}</span>
     </div>`;
             main.innerHTML += card;
         }
+        ++count;
     });
-    let cards = document.getElementsByClassName("card");
-    for (let i = 0, cnt = cards.length; i < cnt; i++) {
-        const width = cards[i].offsetWidth;
-        cards[i].style.height = width * 0.6 + "px";
-    }
+    let cards = document.querySelectorAll(".card");
+    cards.forEach(el => {
+        const width = el.offsetWidth;
+        el.style.height = width * 0.6 + 'px';
+
+        el.addEventListener('click', popupinfo)
+    })
 }
+
 
 
 const api = new Api("mi-gl");
@@ -90,6 +95,65 @@ const getCats = function (api, store) {
     }
 }
 getCats(api, catsData);
+
+function popupinfo() {
+    const img_link = catsData[this.dataset.catid].img_link;
+    let modalInfo = document.createElement('div');
+    modalInfo.className = 'modalInfo';
+    modalInfo.innerHTML = `
+    <div class="popup-info active">
+    <div class="popup active">
+    <div class="popup_info-close btn"><i class="fa-solid fa-xmark"></i></div>
+    <h2>Информация о питомце</h2>
+    <p>Имя: ${catsData[this.dataset.catid].name}</p>
+    <p>id питомца: ${catsData[this.dataset.catid].id}</p>
+    <p>Возраст: ${catsData[this.dataset.catid].age}</p>
+    <p>Рейтинг: ${catsData[this.dataset.catid].rate}</p>
+    <p>Описание: ${catsData[this.dataset.catid].description}</p>
+    <p>Любимчик: 
+    ${catsData[this.dataset.catid].favourite ? "Да" : "Нет"}
+    </p>
+    <p>Картинка:</p>
+    <img style="width:300px;heigth:300px" src="
+    ${img_link ? img_link : imgCat}
+    ">
+    <button class="deleteCat btn" type="button">Удалить питомца из базы</button>
+    </div>
+    </div>
+    `
+    document.body.append(modalInfo)
+    const closeInfo = document.querySelector('.popup_info-close');
+    const btnDeleteCat = document.querySelector('.deleteCat');
+    closeInfo.addEventListener('click', closeModalInfo)
+    btnDeleteCat.addEventListener('click', () =>
+        deleteCat(catsData[this.dataset.catid].id));
+}
+
+function deleteCat(catId) {
+    let findInxCard = catsData.findIndex(e => e.id == catId)
+    if (findInxCard == -1) {
+        closeModalInfo();
+        return console.error('Error deleting a pet. IndexCard = -1');
+    }
+
+    api.delCat(catId)
+        .then(res => res.json())
+        .then(data => {
+            if (data.message === "ok") {
+                catsData.splice(findInxCard, 1);
+                localStorage.setItem('cats', JSON.stringify(catsData));
+                updCards(catsData);
+                closeModalInfo();
+            } else {
+                console.error('Error deleting a pet');
+            }
+        });
+}
+
+function closeModalInfo(){
+    modalInfo = document.querySelector('.modalInfo')
+    modalInfo.remove();
+}
 
 let addBtn = document.querySelector("#add");
 let popupForm = document.querySelector("#popup-form");
