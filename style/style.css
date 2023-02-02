@@ -148,10 +148,16 @@ main {
     text-align: center;
 }
 
-.deleteCat {
+.btnTools {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.infoBtn {
     margin-top: 10px;
     padding: 20px 10px;
-    width: 100%;
+    width: 48%;
 }
 
 form {
